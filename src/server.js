@@ -3,7 +3,8 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-const monsterRoutes = require('./routes/monsterRoutes');
+const monsterRoutes = require('./api/routes/monsterRoutes');
+const playerRoutes = require('./api/routes/playerRoutes');
 
 const app = express();
 
@@ -21,8 +22,9 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Monster Battle API' });
 });
 
-// Monster routes
+// API routes
 app.use('/api/monsters', monsterRoutes);
+app.use('/api/players', playerRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
