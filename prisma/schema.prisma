@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  monsters  Monster[]
+  arenas    ArenaPlayer[]
+}
+
+model Monster {
+  id        Int      @id @default(autoincrement())
+  name      String
+  type      String
+  imageUrl  String
+  hp        Int
+  attack    Int
+  defense   Int
+  speed     Int
+  special   String
+  ownerId   Int?
+  owner     Player?  @relation(fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+  arenas    ArenaPlayer[]
+}
+
+model Arena {
+  id         Int           @id @default(autoincrement())
+  name       String        @unique
+  maxPlayers Int
+  status     String        @default("WAITING")
+  currentTurn Int?
+  battleLog  Json?
+  createdAt  DateTime      @default(now())
+  players    ArenaPlayer[]
+}
+
+model ArenaPlayer {
+  id        Int      @id @default(autoincrement())
+  arena     Arena    @relation(fields: [arenaId], references: [id])
+  arenaId   Int
+  player    Player   @relation(fields: [playerId], references: [id])
+  playerId  Int
+  monster   Monster  @relation(fields: [monsterId], references: [id])
+  monsterId Int
+  isReady   Boolean  @default(false)
+}
