@@ -3,6 +3,8 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const monsterRoutes = require('./routes/monsterRoutes');
+
 const app = express();
 
 // Middleware
@@ -18,6 +20,9 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/monster-b
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Monster Battle API' });
 });
+
+// Monster routes
+app.use('/api/monsters', monsterRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
