@@ -1,5 +1,5 @@
-const Arena = require('../models/Arena');
-const Player = require('../models/Player');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 class BattleService {
   static calculateDamage(attacker, defender, action) {
@@ -7,12 +7,12 @@ class BattleService {
     
     switch (action) {
       case 'attack':
-        // Dano base = ataque - defesa
+        // Base damage = attack - defense
         damage = Math.max(1, attacker.attack - defender.defense);
         break;
       
       case 'special':
-        // Dano especial = ataque * 1.5 - defesa
+        // Special damage = attack * 1.5 - defense
         damage = Math.max(1, Math.floor(attacker.attack * 1.5) - defender.defense);
         break;
       
@@ -24,9 +24,14 @@ class BattleService {
   }
 
   static async processAction(arenaId, playerId, action) {
-    const arena = await Arena.findById(arenaId)
-      .populate('players.player')
-      .populate('players.monster');
+    const arena = await prisma.arena.findUnique({
+      where: { id: Number(arenaId) },
+      include: {
+        players: {
+          include: { player: true, monster: true }
+        }
+      }
+    });
     
     if (!arena) {
       throw new Error('Arena not found');
@@ -36,8 +41,8 @@ class BattleService {
       throw new Error('Battle is not in progress');
     }
 
-    // Encontrar jogador atual e oponente
-    const currentPlayerIndex = arena.players.findIndex(p => p.player._id.toString() === playerId);
+    // Find current player and opponent
+    const currentPlayerIndex = arena.players.findIndex(p => p.playerId === Number(playerId));
     if (currentPlayerIndex === -1) {
       throw new Error('Player not in this arena');
     }
@@ -46,7 +51,7 @@ class BattleService {
     const currentPlayer = arena.players[currentPlayerIndex];
     const opponent = arena.players[opponentIndex];
 
-    // Verificar se é o turno do jogador
+    // Check if it's the player's turn
     const isPlayerTurn = (arena.currentTurn - 1) % 2 === currentPlayerIndex;
     console.log('Current Turn:', arena.currentTurn);
     console.log('Current Player Index:', currentPlayerIndex);
@@ -64,7 +69,7 @@ class BattleService {
       timestamp: new Date()
     };
 
-    // Processar ação
+    // Process action
     switch (action) {
       case 'attack':
         damage = this.calculateDamage(
@@ -77,13 +82,13 @@ class BattleService {
         break;
 
       case 'defend':
-        // Aumenta a defesa temporariamente
-        currentPlayer.monster.defense *= 1.5;
+        // Temporarily increase defense
+        currentPlayer.monster.defense = Math.floor(currentPlayer.monster.defense * 1.5);
         battleLog.message = 'Defense increased';
         break;
 
       case 'special':
-        // Verificar cooldown da habilidade especial
+        // Check special ability cooldown
         const lastSpecialTurn = arena.battleLog
           .filter(log => log.player.toString() === playerId && log.action === 'special')
           .pop()?.turn || 0;
@@ -102,9 +107,11 @@ class BattleService {
         break;
 
       case 'forfeit':
-        arena.status = 'FINISHED';
-        arena.winner = opponent.player._id;
-        await this.endBattle(arena);
+        await prisma.arena.update({
+          where: { id: arena.id },
+          data: { status: 'FINISHED', winner: opponent.playerId }
+        });
+        await this.endBattle(arena, opponent.playerId, currentPlayer.playerId);
         return {
           message: 'Player forfeited',
           winner: opponent.player.name
@@ -114,28 +121,36 @@ class BattleService {
         throw new Error('Invalid action');
     }
 
-    // Adicionar log da batalha
+    // Add battle log
     arena.battleLog.push(battleLog);
 
-    // Verificar se a batalha terminou
+    // Check if the battle is over
     if (opponent.monster.hp <= 0) {
-      arena.status = 'FINISHED';
-      arena.winner = currentPlayer.player._id;
-      await this.endBattle(arena);
+      await prisma.arena.update({
+        where: { id: arena.id },
+        data: { status: 'FINISHED', winner: currentPlayer.playerId }
+      });
+      await this.endBattle(arena, currentPlayer.playerId, opponent.playerId);
       return {
         message: 'Battle finished',
         winner: currentPlayer.player.name,
-        battleLog: arena.battleLog
+        battleLog: []
       };
     }
 
-    // Avançar turno
-    arena.currentTurn++;
-    await arena.save();
+    // Update monsters' HP and advance turn
+    await prisma.monster.update({
+      where: { id: opponent.monsterId },
+      data: { hp: opponent.monster.hp }
+    });
+    await prisma.arena.update({
+      where: { id: arena.id },
+      data: { currentTurn: arena.currentTurn + 1 }
+    });
 
     return {
       message: 'Action processed',
-      currentTurn: arena.currentTurn,
+      currentTurn: arena.currentTurn + 1,
       battleState: {
         player_1: {
           monster: arena.players[0].monster.name,
@@ -146,26 +161,19 @@ class BattleService {
           hp: arena.players[1].monster.hp
         }
       },
-      battleLog: arena.battleLog
+      battleLog: []
     };
   }
 
-  static async endBattle(arena) {
-    // Atualizar estatísticas dos jogadores
-    const winner = arena.players.find(p => p.player._id.equals(arena.winner));
-    const loser = arena.players.find(p => !p.player._id.equals(arena.winner));
-
-    await Player.findByIdAndUpdate(winner.player._id, {
-      $inc: { wins: 1 },
-      isInBattle: false
+  static async endBattle(arena, winnerId, loserId) {
+    await prisma.player.update({
+      where: { id: winnerId },
+      data: { wins: { increment: 1 } }
     });
-
-    await Player.findByIdAndUpdate(loser.player._id, {
-      $inc: { losses: 1 },
-      isInBattle: false
+    await prisma.player.update({
+      where: { id: loserId },
+      data: { losses: { increment: 1 } }
     });
-
-    await arena.save();
   }
 }
 
