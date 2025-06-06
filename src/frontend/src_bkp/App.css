@@ -1,0 +1,53 @@
+.App {
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+
+.selection {
+  margin: 20px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.selection ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.selection li {
+  margin: 5px 0;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.selection li:hover {
+  background-color: #e0e0e0;
+}
+
+.battle {
+  margin: 20px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.actions {
+  margin-top: 10px;
+}
+
+.actions button {
+  margin: 5px;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.actions button:hover {
+  background-color: #0056b3;
+} 
