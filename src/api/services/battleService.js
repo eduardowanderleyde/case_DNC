@@ -121,8 +121,12 @@ class BattleService {
         throw new Error('Invalid action');
     }
 
-    // Add battle log
-    arena.battleLog.push(battleLog);
+    // Adicionar log da batalha
+    const updatedBattleLog = Array.isArray(arena.battleLog) ? [...arena.battleLog, JSON.stringify(battleLog)] : [JSON.stringify(battleLog)];
+    await prisma.arena.update({
+      where: { id: arena.id },
+      data: { battleLog: updatedBattleLog }
+    });
 
     // Check if the battle is over
     if (opponent.monster.hp <= 0) {

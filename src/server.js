@@ -1,6 +1,7 @@
+// /Users/Wander/case-DNC/src/server.js
+
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
 require('dotenv').config();
 
 const monsterRoutes = require('./api/routes/monsterRoutes');
@@ -13,17 +14,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/monster-battle')
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// Exponha io em req.app para os controllers:
+let ioInstance = null;
+app.use((req, res, next) => {
+  if (ioInstance) {
+    req.app.io = ioInstance;
+  }
+  next();
+});
 
-// Routes
+// Rotas
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Monster Battle API' });
 });
 
-// API routes
 app.use('/api/monsters', monsterRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/arenas', arenaRoutes);
@@ -34,7 +38,31 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 3001;
+
+let server;
+if (require.main === module) {
+  server = require('http').createServer(app);
+  const io = require('socket.io')(server, {
+    cors: {
+      origin: '*',
+      methods: ['GET', 'POST']
+    }
+  });
+  ioInstance = io;
+
+  io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+    socket.on('disconnect', () => {
+      console.log('User disconnected:', socket.id);
+    });
+  });
+
+  server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+} else {
+  server = app;
+}
+
+module.exports = app;
