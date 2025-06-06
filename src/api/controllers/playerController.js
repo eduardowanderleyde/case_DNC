@@ -30,11 +30,13 @@ exports.getPlayerById = async (req, res) => {
 exports.createPlayer = async (req, res) => {
   try {
     const { name } = req.body;
-    // Check if player name already exists
-    const existingPlayer = await prisma.player.findUnique({ where: { name } });
-    if (existingPlayer) {
-      return res.status(400).json({ message: 'Player name already exists' });
+    // Se já existe, atualiza o jogador existente
+    let player = await prisma.player.findUnique({ where: { name } });
+    if (player) {
+      player = await prisma.player.update({ where: { id: player.id }, data: { name } });
+      return res.status(200).json(player);
     }
+    // Se não existe, cria novo
     const newPlayer = await prisma.player.create({ data: { name } });
     res.status(201).json(newPlayer);
   } catch (error) {
