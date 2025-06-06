@@ -15,10 +15,12 @@ datasource db {
 
 model Player {
   id        Int      @id @default(autoincrement())
-  name      String
+  name      String   @unique
   createdAt DateTime @default(now())
   monsters  Monster[]
   arenas    ArenaPlayer[]
+  arenasAsPlayer1 Arena[] @relation("Player1")
+  arenasAsPlayer2 Arena[] @relation("Player2")
 }
 
 model Monster {
@@ -31,30 +33,35 @@ model Monster {
   defense   Int
   speed     Int
   special   String
-  ownerId   Int?
-  owner     Player?  @relation(fields: [ownerId], references: [id])
+  ownerId   Int
+  owner     Player   @relation(fields: [ownerId], references: [id])
   createdAt DateTime @default(now())
   arenas    ArenaPlayer[]
 }
 
 model Arena {
-  id         Int           @id @default(autoincrement())
-  name       String        @unique
-  maxPlayers Int
-  status     String        @default("WAITING")
-  currentTurn Int?
-  battleLog  Json?
-  createdAt  DateTime      @default(now())
-  players    ArenaPlayer[]
+  id              Int      @id @default(autoincrement())
+  name            String   @unique
+  maxPlayers      Int
+  status          String   @default("WAITING")
+  currentTurn     Int?
+  battleLog       String[]
+  createdAt       DateTime @default(now())
+  players         ArenaPlayer[]
+  player1         Player?  @relation("Player1", fields: [player1Id], references: [id])
+  player1Id       Int?
+  player2         Player?  @relation("Player2", fields: [player2Id], references: [id])
+  player2Id       Int?
+  battleStateTemp Json?    // Estado temporário da batalha (defesa, buffs, etc)
 }
 
 model ArenaPlayer {
   id        Int      @id @default(autoincrement())
-  arena     Arena    @relation(fields: [arenaId], references: [id])
   arenaId   Int
-  player    Player   @relation(fields: [playerId], references: [id])
   playerId  Int
-  monster   Monster  @relation(fields: [monsterId], references: [id])
   monsterId Int
   isReady   Boolean  @default(false)
+  arena     Arena    @relation(fields: [arenaId], references: [id])
+  player    Player   @relation(fields: [playerId], references: [id])
+  monster   Monster  @relation(fields: [monsterId], references: [id])
 }
