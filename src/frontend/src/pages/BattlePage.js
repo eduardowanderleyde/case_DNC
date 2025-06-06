@@ -7,13 +7,16 @@ import {
   Paper,
   Button,
   CircularProgress,
-  Alert
+  Alert,
+  Fade
 } from '@mui/material';
 import { arenaService } from '../services/api';
 import BattleHeader from '../components/BattleHeader';
 import BattleCards from '../components/BattleCards';
 import BattleLog from '../components/BattleLog';
 import BattleActions from '../components/BattleActions';
+
+const pokeballUrl = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
 
 export default function BattlePage({ players, monsters }) {
   const [arena, setArena] = useState(null);
@@ -143,50 +146,75 @@ export default function BattlePage({ players, monsters }) {
   }
 
   return (
-    <Paper elevation={3} sx={{ p: 3, maxWidth: 800, mx: 'auto', mt: 6 }}>
-      <BattleHeader
-        status={arena?.status}
-        currentPlayerName={currentPlayerName}
-        winner={winner}
-      />
-      <BattleCards
-        players={players}
-        monsters={arena?.players?.map(p => p.monster) || []}
-        currentTurn={arena?.currentTurn}
-        status={arena?.status}
-        lastAction={arena?.battleLog?.slice(-1)[0] || ''}
-      />
-      {!winner && arena?.status === 'IN_PROGRESS' && (
-        <BattleActions
-          currentTurn={arena.currentTurn}
-          players={players}
-          onAttackClick={handleAttackClick}
-          onDefend={() => handleAction('defend')}
-          onSpecial={() => handleAttackType('special')}
-          attackModalOpen={attackModalOpen}
-          onAttackType={handleAttackType}
-          onCloseAttackModal={() => setAttackModalOpen(false)}
-          feedbackMsg={feedbackMsg}
-          disabled={isProcessing}
-        />
-      )}
-      {winner && (
-        <Box mt={4} textAlign="center">
-          <Typography variant="h5" color="primary" gutterBottom>
-            Winner: {winner.name}!
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleEndBattle}
-          >
-            End Battle
-          </Button>
+    <Fade in timeout={800}>
+      <Paper elevation={6} sx={{
+        p: 4,
+        maxWidth: 800,
+        mx: 'auto',
+        mt: 8,
+        border: '4px solid #3B4CCA',
+        borderRadius: 4,
+        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+        background: 'linear-gradient(120deg, #fff 60%, #FFCB05 100%)',
+        fontFamily: '"Press Start 2P", Arial, sans-serif',
+        position: 'relative',
+        overflow: 'visible',
+      }}>
+        <Box display="flex" flexDirection="column" alignItems="center" mb={2}>
+          <img src={pokeballUrl} alt="Pokébola" width={60} style={{ marginBottom: 12, filter: 'drop-shadow(0 2px 8px #FF000088)' }} />
         </Box>
-      )}
-      <Box mt={4}>
-        <BattleLog log={arena?.battleLog || []} />
-      </Box>
-    </Paper>
+        <BattleHeader
+          status={arena?.status}
+          currentPlayerName={currentPlayerName}
+          winner={winner}
+        />
+        <BattleCards
+          players={players}
+          monsters={arena?.players?.map(p => p.monster) || []}
+          currentTurn={arena?.currentTurn}
+          status={arena?.status}
+          lastAction={arena?.battleLog?.slice(-1)[0] || ''}
+        />
+        {!winner && arena?.status === 'IN_PROGRESS' && (
+          <BattleActions
+            currentTurn={arena.currentTurn}
+            players={players}
+            onAttackClick={handleAttackClick}
+            onDefend={() => handleAction('defend')}
+            onSpecial={() => handleAttackType('special')}
+            attackModalOpen={attackModalOpen}
+            onAttackType={handleAttackType}
+            onCloseAttackModal={() => setAttackModalOpen(false)}
+            feedbackMsg={feedbackMsg}
+            disabled={isProcessing}
+          />
+        )}
+        {winner && (
+          <Box mt={4} textAlign="center">
+            <Typography variant="h5" sx={{ color: '#FF0000', fontFamily: 'inherit', fontWeight: 700 }} gutterBottom>
+              Winner: {winner.name}!
+            </Typography>
+            <Button
+              variant="contained"
+              sx={{
+                background: '#3B4CCA',
+                color: '#FFCB05',
+                fontFamily: 'inherit',
+                fontWeight: 700,
+                fontSize: 18,
+                boxShadow: '0 2px 8px #3B4CCA44',
+                '&:hover': { background: '#FF0000', color: '#fff' }
+              }}
+              onClick={handleEndBattle}
+            >
+              End Battle
+            </Button>
+          </Box>
+        )}
+        <Box mt={4}>
+          <BattleLog log={arena?.battleLog || []} />
+        </Box>
+      </Paper>
+    </Fade>
   );
 }
