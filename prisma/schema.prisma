@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  monsters  Monster[]
+  arenas    ArenaPlayer[]
+  arenasAsPlayer1 Arena[] @relation("Player1")
+  arenasAsPlayer2 Arena[] @relation("Player2")
+}
+
+model Monster {
+  id        Int      @id @default(autoincrement())
+  name      String
+  type      String
+  imageUrl  String
+  hp        Int
+  attack    Int
+  defense   Int
+  speed     Int
+  special   String
+  ownerId   Int
+  owner     Player   @relation(fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+  arenas    ArenaPlayer[]
+}
+
+model Arena {
+  id              Int      @id @default(autoincrement())
+  name            String   @unique
+  maxPlayers      Int
+  status          String   @default("WAITING")
+  currentTurn     Int?
+  battleLog       String[]
+  createdAt       DateTime @default(now())
+  players         ArenaPlayer[]
+  player1         Player?  @relation("Player1", fields: [player1Id], references: [id])
+  player1Id       Int?
+  player2         Player?  @relation("Player2", fields: [player2Id], references: [id])
+  player2Id       Int?
+  battleStateTemp Json?    // Estado temporário da batalha (defesa, buffs, etc)
+}
+
+model ArenaPlayer {
+  id        Int      @id @default(autoincrement())
+  arenaId   Int
+  playerId  Int
+  monsterId Int
+  isReady   Boolean  @default(false)
+  arena     Arena    @relation(fields: [arenaId], references: [id])
+  player    Player   @relation(fields: [playerId], references: [id])
+  monster   Monster  @relation(fields: [monsterId], references: [id])
+}
