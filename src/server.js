@@ -7,6 +7,7 @@ require('dotenv').config();
 const monsterRoutes = require('./api/routes/monsterRoutes');
 const playerRoutes = require('./api/routes/playerRoutes');
 const arenaRoutes = require('./api/routes/arenaRoutes');
+const testArenaRoutes = require('./api/routes/testArenaRoutes');
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.get('/', (req, res) => {
 app.use('/api/monsters', monsterRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/arenas', arenaRoutes);
+app.use('/api/test-arena', testArenaRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

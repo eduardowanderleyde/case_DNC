@@ -65,3 +65,19 @@ model ArenaPlayer {
   player    Player   @relation(fields: [playerId], references: [id])
   monster   Monster  @relation(fields: [monsterId], references: [id])
 }
+
+model TestArena {
+  id           Int      @id @default(autoincrement())
+  playerName   String
+  playerMonster String
+  botName      String
+  botMonster   String
+  playerHp     Int
+  botHp        Int
+  status       String   @default("WAITING") // WAITING, IN_PROGRESS, FINISHED
+  currentTurn  String?  // "player" ou "bot"
+  battleLog    String[]
+  createdAt    DateTime @default(now())
+  defendingBot    Boolean  @default(false)
+  defendingPlayer Boolean  @default(false)
+}

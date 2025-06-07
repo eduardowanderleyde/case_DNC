@@ -1,33 +1,28 @@
 import React, { useState } from 'react';
-import { Box, Typography, TextField, Button, List, ListItem, ListItemText, IconButton, Paper, Fade } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { Box, Typography, TextField, Button, Paper, Fade } from '@mui/material';
 import { playerService } from '../services/api';
 
 const pokeballUrl = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
 
 export default function PlayerListPage({ onNext }) {
   const [playerName, setPlayerName] = useState('');
-  const [players, setPlayers] = useState([]);
+  const [player, setPlayer] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleAddPlayer = async () => {
+  const handleRegister = async () => {
     const name = playerName.trim();
-    if (!name || players.some(p => p.name === name)) return;
+    if (!name) return;
+    setLoading(true);
     try {
       const newPlayer = await playerService.create({ name });
-      setPlayers([...players, newPlayer]);
+      setPlayer(newPlayer);
       setPlayerName('');
+      if (onNext) onNext([newPlayer]);
     } catch (err) {
       // Tratar erro se necessário
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleRemovePlayer = (id) => {
-    setPlayers(players.filter(p => p.id !== id));
-  };
-
-  const handleNext = () => {
-    if (players.length < 2) return;
-    if (onNext) onNext(players);
   };
 
   return (
@@ -69,8 +64,9 @@ export default function PlayerListPage({ onNext }) {
               fontFamily: '"Press Start 2P", Arial, sans-serif',
             }}
             InputProps={{ style: { fontFamily: '"Press Start 2P", Arial, sans-serif' } }}
+            disabled={!!player || loading}
           />
-          <Button variant="contained" onClick={handleAddPlayer} disabled={!playerName.trim()} sx={{
+          <Button variant="contained" onClick={handleRegister} disabled={!playerName.trim() || !!player || loading} sx={{
             background: '#FFCB05',
             color: '#3B4CCA',
             fontWeight: 700,
@@ -78,42 +74,9 @@ export default function PlayerListPage({ onNext }) {
             boxShadow: '0 2px 8px #3B4CCA44',
             '&:hover': { background: '#FF0000', color: '#fff' }
           }}>
-            Add
+            Register
           </Button>
         </Box>
-        <List>
-          {players.map(player => (
-            <ListItem key={player.id} secondaryAction={
-              <IconButton edge="end" aria-label="delete" onClick={() => handleRemovePlayer(player.id)}>
-                <DeleteIcon />
-              </IconButton>
-            }>
-              <ListItemText primary={player.name} primaryTypographyProps={{
-                fontFamily: '"Press Start 2P", Arial, sans-serif',
-                color: '#3B4CCA',
-                fontWeight: 700
-              }} />
-            </ListItem>
-          ))}
-        </List>
-        <Button
-          variant="contained"
-          fullWidth
-          sx={{
-            mt: 2,
-            background: '#3B4CCA',
-            color: '#FFCB05',
-            fontFamily: '"Press Start 2P", Arial, sans-serif',
-            fontWeight: 700,
-            fontSize: 18,
-            boxShadow: '0 2px 8px #3B4CCA44',
-            '&:hover': { background: '#FF0000', color: '#fff' }
-          }}
-          onClick={handleNext}
-          disabled={players.length < 2}
-        >
-          Next
-        </Button>
       </Paper>
     </Fade>
   );
