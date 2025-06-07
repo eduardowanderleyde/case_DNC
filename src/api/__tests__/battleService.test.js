@@ -5,8 +5,7 @@ const BattleService = require('../services/battleService');
 describe('BattleService', () => {
   let player1, player2, monster1, monster2, arena;
 
-  beforeAll(async () => {
-    // Limpar dados antigos
+  beforeEach(async () => {
     await prisma.arenaPlayer.deleteMany();
     await prisma.monster.deleteMany();
     await prisma.player.deleteMany();
@@ -80,5 +79,47 @@ describe('BattleService', () => {
   it('deve calcular o dano corretamente', () => {
     const dano = BattleService.calculateDamage(monster1, monster2, 'attack');
     expect(dano).toBe(15); // 20 (atk) - 5 (def) = 15
+  });
+
+  it('deve calcular o dano mínimo como 1', () => {
+    const dano = BattleService.calculateDamage({ attack: 5 }, { defense: 10 }, 'attack');
+    expect(dano).toBe(1);
+  });
+
+  it('deve calcular o dano do ataque especial corretamente', () => {
+    const dano = BattleService.calculateDamage(monster1, monster2, 'special');
+    expect(dano).toBe(Math.max(1, Math.floor(monster1.attack * 1.5) - monster2.defense));
+  });
+
+  it('deve aumentar defesa ao defender', async () => {
+    // Simula ação de defesa
+    const arenaId = arena.id;
+    await BattleService.processAction(arenaId, player1.id, 'defend');
+    const updated = await prisma.monster.findUnique({ where: { id: monster1.id } });
+    expect(updated.defense).toBeGreaterThan(monster1.defense);
+  });
+
+  it('deve alternar turno corretamente', async () => {
+    const arenaId = arena.id;
+    // Player1 ataca
+    await BattleService.processAction(arenaId, player1.id, 'attack');
+    const updatedArena = await prisma.arena.findUnique({ where: { id: arenaId } });
+    expect(updatedArena.currentTurn).toBe(2);
+  });
+
+  it('não permite ação fora do turno', async () => {
+    const arenaId = arena.id;
+    // Player2 tenta agir fora do turno
+    await expect(BattleService.processAction(arenaId, player2.id, 'attack')).rejects.toThrow('Not your turn');
+  });
+
+  it('finaliza batalha quando HP chega a zero', async () => {
+    // Reduz HP do oponente para 1
+    await prisma.monster.update({ where: { id: monster2.id }, data: { hp: 1 } });
+    const arenaId = arena.id;
+    const result = await BattleService.processAction(arenaId, player1.id, 'attack');
+    expect(result.message).toMatch(/Battle finished/);
+    const updatedArena = await prisma.arena.findUnique({ where: { id: arenaId } });
+    expect(updatedArena.status).toBe('FINISHED');
   });
 }); 

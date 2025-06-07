@@ -1,4 +1,3 @@
-// /src/pages/BattlePage.js
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -11,6 +10,7 @@ import {
   Fade
 } from '@mui/material';
 import { arenaService, testArenaService } from '../services/api';
+import socketService from '../services/socket';
 import BattleHeader from '../components/BattleHeader';
 import BattleCards from '../components/BattleCards';
 import BattleLog from '../components/BattleLog';
@@ -110,6 +110,59 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
     setupBattle();
     // eslint-disable-next-line
   }, [selectedArena, players, monsters]);
+
+  // --- SOCKET.IO: Atualização em tempo real ---
+  useEffect(() => {
+    if (!arena) return;
+    const socket = socketService.connect();
+    if (isTestArena) {
+      socket.emit('join-testarena');
+    } else if (arena.id) {
+      socket.emit('join-arena', arena.id);
+    }
+    if (isTestArena) {
+      // TestArena: ouvir eventos próprios
+      const handleTestArenaAction = (data) => {
+        setArena(prev => ({ ...prev, ...data, battleLog: data.battleLog }));
+        setWinner(data.status === 'FINISHED' ? (data.playerHp <= 0 ? arena.botName : arena.playerName) : null);
+      };
+      const handleTestArenaEnded = (data) => {
+        setArena(prev => ({ ...prev, ...data, status: 'FINISHED', battleLog: data.battleLog }));
+        setWinner(data.playerHp <= 0 ? arena.botName : arena.playerName);
+      };
+      socketService.on('testarena:action', handleTestArenaAction);
+      socketService.on('testarena:ended', handleTestArenaEnded);
+      return () => {
+        socketService.off('testarena:action');
+        socketService.off('testarena:ended');
+      };
+    } else {
+      // Arenas normais
+      const handleBattleAction = (data) => {
+        if (data.id !== arena.id) return;
+        setArena(prev => ({
+          ...prev,
+          status: data.status,
+          currentTurn: data.currentTurn,
+          players: data.players,
+          battleLog: data.battleLog || [],
+          winner: data.status === 'FINISHED' ? { name: (data.battleLog || []).slice(-1)[0]?.replace('Battle finished! Winner: ', '') } : null
+        }));
+        setWinner(data.status === 'FINISHED' ? { name: (data.battleLog || []).slice(-1)[0]?.replace('Battle finished! Winner: ', '') } : null);
+      };
+      const handleBattleEnded = (data) => {
+        if (data.id !== arena.id) return;
+        setArena(prev => ({ ...prev, status: 'FINISHED', battleLog: data.battleLog || [] }));
+        setWinner({ name: data.winner });
+      };
+      socketService.on('battle:action', handleBattleAction);
+      socketService.on('battle:ended', handleBattleEnded);
+      return () => {
+        socketService.off('battle:action');
+        socketService.off('battle:ended');
+      };
+    }
+  }, [arena, isTestArena]);
 
   const handleAction = async (action) => {
     if (!arena || winner || arena.status !== 'IN_PROGRESS' || isProcessing) return;

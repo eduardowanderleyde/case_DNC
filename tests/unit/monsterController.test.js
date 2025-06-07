@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 const Monster = require('../models/Monster');
 const monsterController = require('../controllers/monsterController');
 
-// Mock response object
 const mockResponse = () => {
   const res = {};
   res.status = jest.fn().mockReturnValue(res);

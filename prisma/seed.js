@@ -21,7 +21,7 @@ async function main() {
   });
   const allPlayers = await prisma.player.findMany();
 
-  // Create monsters (10 Pokémon)
+  // Create monsters (11 Pokémon, incluindo Rattata)
   const monstersData = [
     { name: 'Pikachu', type: 'ELECTRIC', imageUrl: 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/025.png', hp: 60, attack: 18, defense: 8, speed: 22, special: 'Thunderbolt', ownerId: allPlayers[0].id },
     { name: 'Charizard', type: 'FIRE', imageUrl: 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/006.png', hp: 78, attack: 24, defense: 14, speed: 20, special: 'Flamethrower', ownerId: allPlayers[0].id },
@@ -32,7 +32,9 @@ async function main() {
     { name: 'Jolteon', type: 'ELECTRIC', imageUrl: 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/135.png', hp: 65, attack: 16, defense: 10, speed: 25, special: 'Thunder Wave', ownerId: allPlayers[1].id },
     { name: 'Lapras', type: 'WATER', imageUrl: 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/131.png', hp: 130, attack: 17, defense: 15, speed: 12, special: 'Ice Beam', ownerId: allPlayers[5].id },
     { name: 'Machamp', type: 'FIGHTING', imageUrl: 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/068.png', hp: 90, attack: 25, defense: 15, speed: 13, special: 'Dynamic Punch', ownerId: allPlayers[2].id },
-    { name: 'Alakazam', type: 'PSYCHIC', imageUrl: 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/065.png', hp: 55, attack: 20, defense: 8, speed: 24, special: 'Psychic', ownerId: allPlayers[3].id }
+    { name: 'Alakazam', type: 'PSYCHIC', imageUrl: 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/065.png', hp: 55, attack: 20, defense: 8, speed: 24, special: 'Psychic', ownerId: allPlayers[3].id },
+    // Rattata para o bot da Test Arena
+    { name: 'Rattata', type: 'NORMAL', imageUrl: 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/019.png', hp: 30, attack: 10, defense: 6, speed: 20, special: 'Quick Attack', ownerId: allPlayers[0].id }
   ];
   const createdMonsters = [];
   for (const monster of monstersData) {

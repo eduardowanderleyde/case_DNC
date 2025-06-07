@@ -34,17 +34,19 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
   }, []);
 
   const handleEnterTestArena = async () => {
+    if (!monster?.id) {
+      alert('Selecione um monstro antes de entrar na Arena de Teste!');
+      return;
+    }
     setJoining(true);
     try {
-      // Usa o nome do player e monstro selecionados, ou valores padrão
       const playerName = player?.name || 'Player';
       const playerMonster = monster?.name || 'Pikachu';
       const playerMonsterId = monster?.id;
+      console.log('Iniciando TestArena com:', { playerName, playerMonster, playerMonsterId });
       await testArenaService.start(playerName, playerMonster, playerMonsterId);
-      // Atualiza o estado da TestArena
       const data = await testArenaService.getState();
       setTestArena(data);
-      // Chama o callback para navegação, se necessário
       if (onEnterArena) onEnterArena({ isTestArena: true });
     } catch (err) {
       // Tratar erro se necessário

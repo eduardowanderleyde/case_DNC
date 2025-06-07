@@ -1,7 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Get all players
 exports.getAllPlayers = async (req, res) => {
   try {
     const players = await prisma.player.findMany();
@@ -11,7 +10,6 @@ exports.getAllPlayers = async (req, res) => {
   }
 };
 
-// Get player by ID
 exports.getPlayerById = async (req, res) => {
   try {
     const player = await prisma.player.findUnique({
@@ -26,7 +24,6 @@ exports.getPlayerById = async (req, res) => {
   }
 };
 
-// Create new player
 exports.createPlayer = async (req, res) => {
   try {
     const { name } = req.body;
@@ -44,7 +41,6 @@ exports.createPlayer = async (req, res) => {
   }
 };
 
-// Update player
 exports.updatePlayer = async (req, res) => {
   try {
     const player = await prisma.player.update({
@@ -57,7 +53,6 @@ exports.updatePlayer = async (req, res) => {
   }
 };
 
-// Delete player
 exports.deletePlayer = async (req, res) => {
   try {
     await prisma.player.delete({
