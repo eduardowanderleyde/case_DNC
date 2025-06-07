@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -29,10 +28,6 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
 
   // Detecta se é modo TestArena
   const isTestArena = selectedArena && selectedArena.isTestArena;
-
-  // Para TestArena: nomes e monstros fixos
-  const testPlayerImg = 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/025.png';
-  const testBotImg = 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/019.png';
 
   // Identificar o player logado (usuário atual)
   const loggedPlayer = players[0];
@@ -287,6 +282,7 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
 
   // Renderização para TestArena
   if (isTestArena && arena) {
+    console.log('[BattlePage] Renderizando TestArena', { arena, winner, status: arena.status, currentTurn: arena.currentTurn });
     return (
       <Fade in timeout={800}>
         <Paper elevation={6} sx={{
@@ -362,6 +358,7 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
     );
   }
 
+  console.log('[BattlePage] Renderizando Arena Normal', { arena, winner, status: arena?.status, currentTurn: arena?.currentTurn, orderedPlayers });
   return (
     <Fade in timeout={800}>
       <Paper elevation={6} sx={{
@@ -392,19 +389,30 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
           status={arena?.status}
           lastAction={arena?.battleLog?.slice(-1)[0] || ''}
         />
-        {!winner && arena?.status === 'IN_PROGRESS' && (
+        {arena?.players && arena.players.length < 2 && (
+          <Box mt={3} textAlign="center">
+            <Typography variant="h6" sx={{ color: '#888', fontFamily: 'inherit', fontWeight: 700 }}>
+              Waiting for opponent...
+            </Typography>
+          </Box>
+        )}
+        {!winner && (
           <BattleActions
-            currentTurn={arena.currentTurn}
+            currentTurn={arena?.currentTurn}
             players={orderedPlayers}
             onAttackClick={handleAttackClick}
             onDefend={() => handleAction('defend')}
-            onSpecial={() => handleAttackType('special')}
+            onSpecial={() => handleAction('special')}
             onForfeit={handleEndBattle}
             attackModalOpen={attackModalOpen}
             onAttackType={handleAttackType}
             onCloseAttackModal={() => setAttackModalOpen(false)}
             feedbackMsg={feedbackMsg}
-            disabled={isProcessing || arena.currentTurn !== loggedPlayer.id}
+            disabled={
+              isProcessing ||
+              arena?.status !== 'IN_PROGRESS' ||
+              arena?.currentTurn !== loggedPlayer.id
+            }
           />
         )}
         {winner && (

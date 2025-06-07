@@ -42,9 +42,9 @@ async function main() {
     createdMonsters.push(m);
   }
 
-  // Criar 5 arenas
+  // Criar 8 arenas
   const arenas = [];
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 8; i++) {
     const arena = await prisma.arena.create({
       data: {
         name: `Arena ${i}`,
@@ -54,26 +54,26 @@ async function main() {
     arenas.push(arena);
   }
 
-  // Arena 1: cheia (2 jogadores)
+  // Arena 1: cheia (Ash e Misty)
   await prisma.arenaPlayer.createMany({
     data: [
       { arenaId: arenas[0].id, playerId: allPlayers[0].id, monsterId: createdMonsters[0].id, isReady: false }, // Ash - Pikachu
       { arenaId: arenas[0].id, playerId: allPlayers[1].id, monsterId: createdMonsters[2].id, isReady: false }  // Misty - Blastoise
     ]
   });
-  // Arena 2: 1 jogador
-  await prisma.arenaPlayer.create({
-    data: { arenaId: arenas[1].id, playerId: allPlayers[2].id, monsterId: createdMonsters[3].id, isReady: false } // Brock - Bulbasaur
-  });
-  // Arena 3: 1 jogador
-  await prisma.arenaPlayer.create({
-    data: { arenaId: arenas[2].id, playerId: allPlayers[3].id, monsterId: createdMonsters[4].id, isReady: false } // Gary - Gengar
-  });
-  // Arena 4: 1 jogador
-  await prisma.arenaPlayer.create({
-    data: { arenaId: arenas[3].id, playerId: allPlayers[4].id, monsterId: createdMonsters[5].id, isReady: false } // Erika - Snorlax
-  });
-  // Arena 5: vazia
+  // Arenas 2-8: cada uma com 1 jogador diferente (circular se faltar)
+  for (let i = 1; i <= 7; i++) {
+    const playerIdx = (i + 1) % allPlayers.length;
+    const monsterIdx = (i + 2) % createdMonsters.length;
+    await prisma.arenaPlayer.create({
+      data: {
+        arenaId: arenas[i].id,
+        playerId: allPlayers[playerIdx].id,
+        monsterId: createdMonsters[monsterIdx].id,
+        isReady: false
+      }
+    });
+  }
 
   // Arena de Teste: sempre vazia
   const testArena = await prisma.arena.create({
@@ -83,7 +83,7 @@ async function main() {
     }
   });
 
-  console.log('Seeds criadas: Arena 1 cheia, outras com 1 jogador, e Arena de Teste vazia!');
+  console.log('Seeds criadas: Arena 1 com Ash e Misty, Arena 2 com Brock, Arena 3 com Gary, Arena 4 com Erika, Arena 5 com Sabrina, e Arena de Teste vazia!');
 }
 
 main()

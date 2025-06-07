@@ -96,10 +96,11 @@ export default function MonsterListPage({ players, onNext }) {
                   </Box>
                 ) : (
                   <FormControl fullWidth sx={{ mt: 1 }}>
-                    <InputLabel id={`monster-select-label-${idx}`} sx={{ fontFamily: 'inherit' }}>Monster</InputLabel>
+                    <InputLabel id={`monster-select-label-${idx}`} htmlFor={`monster-select-${idx}`} sx={{ fontFamily: 'inherit' }}>Monster</InputLabel>
                     <Select
                       labelId={`monster-select-label-${idx}`}
                       id={`monster-select-${idx}`}
+                      name={`monster-select-${idx}`}
                       label="Monster"
                       value={''}
                       onChange={e => handleMonsterSelect(idx, e.target.value)}

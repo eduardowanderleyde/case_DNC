@@ -15,6 +15,9 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
   const [maxPlayers, setMaxPlayers] = useState(2);
   const [creating, setCreating] = useState(false);
 
+  // Recupera o playerId do localStorage
+  const playerId = Number(localStorage.getItem('playerId'));
+
   useEffect(() => {
     async function fetchArenas() {
       setLoading(true);
@@ -49,7 +52,7 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
       setTestArena(data);
       if (onEnterArena) onEnterArena({ isTestArena: true });
     } catch (err) {
-      // Tratar erro se necessário
+
     } finally {
       setJoining(false);
     }
@@ -63,7 +66,14 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
         player_id: player.id,
         monster_id: monster.id
       });
-      onEnterArena(arena);
+      // Buscar estado atualizado da arena
+      const res = await fetch(`/api/arenas/${arena.id}`);
+      const updatedArena = await res.json();
+      // Se a arena ficou cheia e está em WAITING, iniciar a batalha
+      if (updatedArena.players && updatedArena.players.length === updatedArena.maxPlayers && updatedArena.status === 'WAITING') {
+        await arenaService.startBattle(arena.id);
+      }
+      if (onEnterArena) onEnterArena(arena);
     } catch (err) {
       // Tratar erro se necessário
     } finally {
@@ -96,13 +106,19 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
       setArenas(data);
       setLoading(false);
     } catch (err) {
-      // Tratar erro se necessário
+
     } finally {
       setCreating(false);
     }
   };
 
   const normalArenas = arenas.filter(a => a.name !== 'Arena de Teste');
+
+  // Filtrar arenas: mostrar só a Arena 1 (cheia) e as demais com exatamente 1 jogador
+  const filteredArenas = arenas.filter((a, idx) => {
+    if (idx === 0) return a.players && a.players.length === a.maxPlayers; // Arena 1 cheia
+    return a.players && a.players.length === 1; // Demais com 1 jogador
+  });
 
   return (
     <Fade in timeout={800}>
@@ -222,7 +238,7 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
               </Button>
             </Box>
             <Grid container spacing={4}>
-              {normalArenas.map((arena) => (
+              {filteredArenas.map((arena) => (
                 <Grid item xs={12} md={6} key={arena.id}>
                   <Paper elevation={3} sx={{
                     p: 3,
@@ -262,9 +278,14 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
                         '&:hover': { background: '#FF0000', color: '#fff' }
                       }}
                       onClick={() => handleEnterArena(arena)}
-                      disabled={arena.players && arena.players.length >= arena.maxPlayers || joining}
+                      disabled={
+                        (arena.players && arena.players.length >= arena.maxPlayers) ||
+                        (arena.players && arena.players.some(ap => ap.player?.id === playerId)) ||
+                        joining
+                      }
                     >
-                      {arena.players && arena.players.length >= arena.maxPlayers ? 'Full' : (joining ? 'Entering...' : 'Enter')}
+                      {arena.players && arena.players.length >= arena.maxPlayers ? 'Full' :
+                        (arena.players && arena.players.some(ap => ap.player?.id === playerId) ? 'Already Joined' : (joining ? 'Entering...' : 'Enter'))}
                     </Button>
                   </Paper>
                 </Grid>
