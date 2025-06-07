@@ -63,4 +63,19 @@ export const arenaService = {
     const response = await api.post(`/arenas/${id}/action`, data);
     return response.data;
   },
+};
+
+export const testArenaService = {
+  async getState() {
+    const response = await api.get('/test-arena/state');
+    return response.data;
+  },
+  async start(playerName, playerMonster, playerMonsterId) {
+    const response = await api.post('/test-arena/start', { playerName, playerMonster, playerMonsterId });
+    return response.data;
+  },
+  async action(action) {
+    const response = await api.post('/test-arena/action', { action });
+    return response.data;
+  },
 }; 

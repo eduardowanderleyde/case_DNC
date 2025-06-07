@@ -266,12 +266,26 @@ exports.startBattle = async (req, res) => {
       });
     }
 
+    // Buscar os dois jogadores e seus monstros
+    const player1 = arena.players.find(p => p.playerId === arena.player1Id);
+    const player2 = arena.players.find(p => p.playerId === arena.player2Id);
+    if (!player1 || !player2) {
+      return res.status(400).json({ message: 'Jogadores não encontrados na arena.' });
+    }
+    // Buscar atributos de speed dos monstros
+    const player1Speed = player1.monster.speed;
+    const player2Speed = player2.monster.speed;
+    let firstTurnId = player1.playerId;
+    if (player2Speed > player1Speed) {
+      firstTurnId = player2.playerId;
+    }
+
     // Atualiza status, currentTurn e battleLog
     const updatedArena = await prisma.arena.update({
       where: { id: parseInt(id) },
       data: {
         status: 'IN_PROGRESS',
-        currentTurn: arena.player1Id,
+        currentTurn: firstTurnId,
         battleLog: [
           `Battle started between ${arena.player1.name} and ${arena.player2.name}`
         ]
@@ -403,6 +417,16 @@ exports.processAction = async (req, res) => {
           battleStateTemp: battleStateTemp,
         }
       });
+      // Simulação de bot: se o próximo turno for de um jogador seed (nome não igual ao player_id do request), faz ação automática
+      const botPlayer = opponent;
+      if (botPlayer && botPlayer.playerId !== Number(player_id) && botPlayer.player.name !== 'Edu' && botPlayer.player.name !== 'Iu' && botPlayer.player.name !== 'Wander') {
+        // Escolhe ação aleatória para o bot
+        const botActions = ['attack', 'defend', 'special'];
+        const botAction = botActions[Math.floor(Math.random() * botActions.length)];
+        // Chama recursivamente processAction para o bot
+        req.body = { player_id: botPlayer.playerId, action: botAction };
+        return exports.processAction(req, res);
+      }
       return res.json({ currentTurn: nextTurn, battleLog: newBattleLog });
     }
   } catch (error) {
