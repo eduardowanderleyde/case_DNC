@@ -68,32 +68,32 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
           setWinner(null);
         } else if (players.length === 2 && monsters.length === 2) {
           // Fluxo antigo: criar nova arena
-          const newArena = await arenaService.create({
-            name: `Arena ${Date.now()}`,
-            maxPlayers: 2
-          });
-          await arenaService.join(newArena.id, {
-            player_id: players[0].id,
-            monster_id: monsters[0].id
-          });
-          await arenaService.join(newArena.id, {
-            player_id: players[1].id,
-            monster_id: monsters[1].id
-          });
-          await arenaService.start(newArena.id);
+        const newArena = await arenaService.create({
+          name: `Arena ${Date.now()}`,
+          maxPlayers: 2
+        });
+        await arenaService.join(newArena.id, {
+          player_id: players[0].id,
+          monster_id: monsters[0].id
+        });
+        await arenaService.join(newArena.id, {
+          player_id: players[1].id,
+          monster_id: monsters[1].id
+        });
+        await arenaService.start(newArena.id);
           const arenaState = await arenaService.getArena(newArena.id);
-          setArena({
-            id: newArena.id,
-            status: arenaState.status,
-            currentTurn: arenaState.currentTurn,
-            players: [
-              { player: players[0], monster: { ...monsters[0], hp: arenaState?.battleState?.player_1?.hp ?? monsters[0].hp, maxHp: monsters[0].hp } },
-              { player: players[1], monster: { ...monsters[1], hp: arenaState?.battleState?.player_2?.hp ?? monsters[1].hp, maxHp: monsters[1].hp } }
-            ],
-            battleLog: arenaState.battleLog || [],
-            winner: null
-          });
-          setWinner(null);
+        setArena({
+          id: newArena.id,
+          status: arenaState.status,
+          currentTurn: arenaState.currentTurn,
+          players: [
+            { player: players[0], monster: { ...monsters[0], hp: arenaState?.battleState?.player_1?.hp ?? monsters[0].hp, maxHp: monsters[0].hp } },
+            { player: players[1], monster: { ...monsters[1], hp: arenaState?.battleState?.player_2?.hp ?? monsters[1].hp, maxHp: monsters[1].hp } }
+          ],
+          battleLog: arenaState.battleLog || [],
+          winner: null
+        });
+        setWinner(null);
         }
       } catch (err) {
         const msg = err.response?.data?.message || err.message;
@@ -210,7 +210,7 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
   const handleEndBattle = async () => {
     if (!arena) return;
     try {
-      await arenaService.end(arena.id);
+      await arenaService.endBattle(arena.id);
     } catch (err) {
       setError('Error ending battle: ' + err.message);
     }
@@ -377,18 +377,18 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
         <Box display="flex" flexDirection="column" alignItems="center" mb={2}>
           <img src={pokeballUrl} alt="Pokébola" width={60} style={{ marginBottom: 12, filter: 'drop-shadow(0 2px 8px #FF000088)' }} />
         </Box>
-        <BattleHeader
-          status={arena?.status}
+      <BattleHeader
+        status={arena?.status}
           currentPlayerName={arena && arena.currentTurn ? (orderedPlayers.find(p => p.id === arena.currentTurn)?.name) : null}
-          winner={winner}
-        />
-        <BattleCards
+        winner={winner}
+      />
+      <BattleCards
           players={orderedPlayers}
           monsters={orderedMonsters}
-          currentTurn={arena?.currentTurn}
-          status={arena?.status}
-          lastAction={arena?.battleLog?.slice(-1)[0] || ''}
-        />
+        currentTurn={arena?.currentTurn}
+        status={arena?.status}
+        lastAction={arena?.battleLog?.slice(-1)[0] || ''}
+      />
         {arena?.players && arena.players.length < 2 && (
           <Box mt={3} textAlign="center">
             <Typography variant="h6" sx={{ color: '#888', fontFamily: 'inherit', fontWeight: 700 }}>
@@ -397,31 +397,31 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
           </Box>
         )}
         {!winner && (
-          <BattleActions
+        <BattleActions
             currentTurn={arena?.currentTurn}
             players={orderedPlayers}
-            onAttackClick={handleAttackClick}
-            onDefend={() => handleAction('defend')}
+          onAttackClick={handleAttackClick}
+          onDefend={() => handleAction('defend')}
             onSpecial={() => handleAction('special')}
             onForfeit={handleEndBattle}
-            attackModalOpen={attackModalOpen}
-            onAttackType={handleAttackType}
-            onCloseAttackModal={() => setAttackModalOpen(false)}
-            feedbackMsg={feedbackMsg}
+          attackModalOpen={attackModalOpen}
+          onAttackType={handleAttackType}
+          onCloseAttackModal={() => setAttackModalOpen(false)}
+          feedbackMsg={feedbackMsg}
             disabled={
               isProcessing ||
               arena?.status !== 'IN_PROGRESS' ||
               arena?.currentTurn !== loggedPlayer.id
             }
-          />
-        )}
-        {winner && (
-          <Box mt={4} textAlign="center">
+        />
+      )}
+      {winner && (
+        <Box mt={4} textAlign="center">
             <Typography variant="h5" sx={{ color: '#FF0000', fontFamily: 'inherit', fontWeight: 700 }} gutterBottom>
-              Winner: {winner.name}!
-            </Typography>
-            <Button
-              variant="contained"
+            Winner: {winner.name}!
+          </Typography>
+          <Button
+            variant="contained"
               sx={{
                 background: '#3B4CCA',
                 color: '#FFCB05',
@@ -431,16 +431,16 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
                 boxShadow: '0 2px 8px #3B4CCA44',
                 '&:hover': { background: '#FF0000', color: '#fff' }
               }}
-              onClick={handleEndBattle}
-            >
-              End Battle
-            </Button>
-          </Box>
-        )}
-        <Box mt={4}>
-          <BattleLog log={arena?.battleLog || []} />
+            onClick={handleEndBattle}
+          >
+            End Battle
+          </Button>
         </Box>
-      </Paper>
+      )}
+      <Box mt={4}>
+        <BattleLog log={arena?.battleLog || []} />
+      </Box>
+    </Paper>
     </Fade>
   );
 }

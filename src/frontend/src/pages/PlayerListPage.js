@@ -54,13 +54,13 @@ export default function PlayerListPage({ onNext }) {
             Player Registration
           </Typography>
         </Box>
-        <Box display="flex" gap={2} mb={2}>
-          <TextField
-            id="player-name-input"
-            label="Player Name"
-            value={playerName}
-            onChange={e => setPlayerName(e.target.value)}
-            fullWidth
+      <Box display="flex" gap={2} mb={2}>
+        <TextField
+          id="player-name-input"
+          label="Player Name"
+          value={playerName}
+          onChange={e => setPlayerName(e.target.value)}
+          fullWidth
             sx={{
               background: '#fff',
               borderRadius: 2,
@@ -68,7 +68,7 @@ export default function PlayerListPage({ onNext }) {
             }}
             InputProps={{ style: { fontFamily: '"Press Start 2P", Arial, sans-serif' } }}
             disabled={!!player || loading}
-          />
+        />
           <Button variant="contained" onClick={handleRegister} disabled={!playerName.trim() || !!player || loading} sx={{
             background: '#FFCB05',
             color: '#3B4CCA',
@@ -78,9 +78,9 @@ export default function PlayerListPage({ onNext }) {
             '&:hover': { background: '#FF0000', color: '#fff' }
           }}>
             Register
-          </Button>
-        </Box>
-      </Paper>
+        </Button>
+      </Box>
+    </Paper>
     </Fade>
   );
 } 
