@@ -36,14 +36,14 @@ export default function BattleCards({ players, monsters, currentTurn, status, la
       <Grid item xs={12} md={6}>
         <Typography align="center" fontWeight={900} fontSize={28} color="#d32f2f" sx={{ mb: 1, fontFamily: 'inherit', letterSpacing: 1 }}>
           {players[1]?.name || 'Player 2'}
-        </Typography>
-        <MonsterCard
+          </Typography>
+          <MonsterCard
           monster={monsters[1] || { name: '???', hp: 0, maxHp: 1, attack: 0, defense: 0, speed: 0, special: '-' }}
-          selected
+            selected
           isCurrentTurn={status === 'IN_PROGRESS' && currentTurn === players[1]?.id}
           effect={getEffectForPlayer(lastAction, 1, players)}
-        />
-      </Grid>
+          />
+        </Grid>
     </Grid>
   );
 } 

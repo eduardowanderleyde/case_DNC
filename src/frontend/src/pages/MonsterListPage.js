@@ -69,13 +69,13 @@ export default function MonsterListPage({ players, onNext }) {
             Choose a ready monster for each player:
           </Typography>
         </Box>
-        <List>
-          {players.map((player, idx) => (
-            <ListItem key={player.id} alignItems="flex-start">
-              <Box flex={1}>
+      <List>
+        {players.map((player, idx) => (
+          <ListItem key={player.id} alignItems="flex-start">
+            <Box flex={1}>
                 <Typography fontWeight={700} sx={{ color: '#FFCB05', fontFamily: 'inherit', fontSize: 16, mb: 1 }}>{player.name}</Typography>
-                {selectedMonsters[idx] ? (
-                  <Box display="flex" alignItems="center" gap={2} mt={1}>
+              {selectedMonsters[idx] ? (
+                <Box display="flex" alignItems="center" gap={2} mt={1}>
                     <Card variant="outlined" sx={{
                       minWidth: 200,
                       border: '2px solid #3B4CCA',
@@ -83,45 +83,45 @@ export default function MonsterListPage({ players, onNext }) {
                       fontFamily: 'inherit',
                       boxShadow: '0 2px 8px #3B4CCA44',
                     }}>
-                      <CardContent>
+                    <CardContent>
                         <Typography variant="subtitle1" sx={{ color: '#3B4CCA', fontFamily: 'inherit', fontWeight: 700 }}>{selectedMonsters[idx].name}</Typography>
                         <Typography variant="body2" sx={{ fontFamily: 'inherit' }}>HP: {selectedMonsters[idx].hp}</Typography>
                         <Typography variant="body2" sx={{ fontFamily: 'inherit' }}>ATK: {selectedMonsters[idx].attack}</Typography>
                         <Typography variant="body2" sx={{ fontFamily: 'inherit' }}>DEF: {selectedMonsters[idx].defense}</Typography>
                         <Typography variant="body2" sx={{ fontFamily: 'inherit' }}>SPD: {selectedMonsters[idx].speed}</Typography>
                         <Typography variant="body2" sx={{ fontFamily: 'inherit' }}>Special: {selectedMonsters[idx].special}</Typography>
-                      </CardContent>
-                    </Card>
+                    </CardContent>
+                  </Card>
                     <Button color="error" variant="contained" onClick={() => handleRemoveMonster(idx)} sx={{ fontFamily: 'inherit', fontWeight: 700, background: '#FF0000', color: '#fff', '&:hover': { background: '#3B4CCA' } }}>Remove</Button>
-                  </Box>
-                ) : (
-                  <FormControl fullWidth sx={{ mt: 1 }}>
+                </Box>
+              ) : (
+                <FormControl fullWidth sx={{ mt: 1 }}>
                     <InputLabel id={`monster-select-label-${idx}`} htmlFor={`monster-select-${idx}`} sx={{ fontFamily: 'inherit' }}>Monster</InputLabel>
-                    <Select
-                      labelId={`monster-select-label-${idx}`}
-                      id={`monster-select-${idx}`}
+                  <Select
+                    labelId={`monster-select-label-${idx}`}
+                    id={`monster-select-${idx}`}
                       name={`monster-select-${idx}`}
-                      label="Monster"
-                      value={''}
-                      onChange={e => handleMonsterSelect(idx, e.target.value)}
-                      disabled={loading}
+                    label="Monster"
+                    value={''}
+                    onChange={e => handleMonsterSelect(idx, e.target.value)}
+                    disabled={loading}
                       sx={{ fontFamily: 'inherit', background: '#fff', borderRadius: 2 }}
-                    >
-                      {monsters.filter(m => !selectedMonsters.some(sel => sel && sel.id === m.id)).map(monster => (
+                  >
+                    {monsters.filter(m => !selectedMonsters.some(sel => sel && sel.id === m.id)).map(monster => (
                         <MenuItem key={monster.id} value={monster.id} sx={{ fontFamily: 'inherit' }}>
-                          {monster.name} (HP: {monster.hp}, ATK: {monster.attack}, DEF: {monster.defense}, SPD: {monster.speed})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                )}
-              </Box>
-            </ListItem>
-          ))}
-        </List>
-        <Button
-          variant="contained"
-          fullWidth
+                        {monster.name} (HP: {monster.hp}, ATK: {monster.attack}, DEF: {monster.defense}, SPD: {monster.speed})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+            </Box>
+          </ListItem>
+        ))}
+      </List>
+      <Button
+        variant="contained"
+        fullWidth
           sx={{
             mt: 2,
             background: '#3B4CCA',
@@ -132,12 +132,12 @@ export default function MonsterListPage({ players, onNext }) {
             boxShadow: '0 2px 8px #3B4CCA44',
             '&:hover': { background: '#FF0000', color: '#fff' }
           }}
-          onClick={handleNext}
-          disabled={selectedMonsters.some(m => !m)}
-        >
-          Next
-        </Button>
-      </Paper>
+        onClick={handleNext}
+        disabled={selectedMonsters.some(m => !m)}
+      >
+        Next
+      </Button>
+    </Paper>
     </Fade>
   );
 } 

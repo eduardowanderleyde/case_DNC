@@ -23,6 +23,14 @@ exports.startTestArena = async (req, res) => {
     if (!botMonsterData) {
       botMonsterData = await prisma.monster.findFirst({ where: { name: 'Pikachu' } });
     }
+    // Resetar HP do bot para 30 (ou valor padrão)
+    if (botMonsterData) {
+      await prisma.monster.update({
+        where: { id: botMonsterData.id },
+        data: { hp: 30 }
+      });
+      botMonsterData.hp = 30;
+    }
 
     // Definir quem começa pelo atributo speed
     let firstTurn = 'player';

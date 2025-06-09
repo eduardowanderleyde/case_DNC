@@ -33,7 +33,7 @@ out/
 
 # OS
 .DS_Store
-Thumbs.db
+Thumbs.db 
 desktop.ini
 
 # Logs
