@@ -1,4 +1,3 @@
-// src/services/arenaService.js
 import axios from 'axios';
 
 function getAuthHeader() {

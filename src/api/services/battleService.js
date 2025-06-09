@@ -84,6 +84,7 @@ class BattleService {
       case 'defend':
         // Temporarily increase defense
         currentPlayer.monster.defense = Math.floor(currentPlayer.monster.defense * 1.5);
+        await prisma.monster.update({ where: { id: currentPlayer.monster.id }, data: { defense: currentPlayer.monster.defense } });
         battleLog.message = 'Defense increased';
         break;
 
@@ -132,7 +133,7 @@ class BattleService {
     if (opponent.monster.hp <= 0) {
       await prisma.arena.update({
         where: { id: arena.id },
-        data: { status: 'FINISHED', winner: currentPlayer.playerId }
+        data: { status: 'FINISHED' }
       });
       await this.endBattle(arena, currentPlayer.playerId, opponent.playerId);
       return {

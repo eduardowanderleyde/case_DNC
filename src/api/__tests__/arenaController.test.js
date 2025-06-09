@@ -3,7 +3,6 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const app = require('../../server');
-// Mock apenas o app.io.emit para não emitir eventos reais durante os testes
 if (!app.io) app.io = {};
 app.io.emit = jest.fn();
 const arenaController = require('../controllers/arenaController');

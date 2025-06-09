@@ -1,6 +1,5 @@
 import '@testing-library/jest-dom';
 
-// Mock do Material-UI
 jest.mock('@mui/material', () => ({
   ...jest.requireActual('@mui/material'),
   useTheme: () => ({
