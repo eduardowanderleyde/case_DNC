@@ -1,7 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Inicia ou reseta a TestArena
 exports.startTestArena = async (req, res) => {
   try {
     // Sempre reseta: deleta todas as arenas de teste
@@ -11,15 +10,15 @@ exports.startTestArena = async (req, res) => {
     const playerName = req.body.playerName || 'Player';
     const playerMonster = req.body.playerMonster || 'Pikachu';
     const playerMonsterId = req.body.playerMonsterId;
-
-    // Buscar atributos reais do monstro do player
+    if (!playerMonsterId) {
+      return res.status(400).json({ message: 'ID do monstro não enviado.' });
+    }
     let playerMonsterData = await prisma.monster.findUnique({ where: { id: Number(playerMonsterId) } });
     if (!playerMonsterData) {
-      // fallback para Pikachu
-      playerMonsterData = await prisma.monster.findFirst({ where: { name: 'Pikachu' } });
+      return res.status(400).json({ message: 'Monstro não encontrado.' });
     }
 
-    // Buscar monstro do bot (usar Pikachu se não houver Rattata)
+    // Buscar monstro do bot (sempre Rattata)
     let botMonsterData = await prisma.monster.findFirst({ where: { name: 'Rattata' } });
     if (!botMonsterData) {
       botMonsterData = await prisma.monster.findFirst({ where: { name: 'Pikachu' } });
@@ -115,7 +114,6 @@ exports.startTestArena = async (req, res) => {
   }
 };
 
-// Processa ação na TestArena
 exports.actionTestArena = async (req, res) => {
   try {
     const arena = await prisma.testArena.findFirst({ orderBy: { createdAt: 'desc' } });
@@ -166,6 +164,9 @@ exports.actionTestArena = async (req, res) => {
     if (botHp <= 0) {
       battleLog.push(`Vitória do jogador!`);
       await prisma.testArena.delete({ where: { id: arena.id } });
+      if (req.app && req.app.io) {
+        req.app.io.to('testarena').emit('testarena:ended', { status: 'FINISHED', battleLog, playerHp, botHp });
+      }
       return res.json({ status: 'FINISHED', battleLog, playerHp, botHp });
     }
     // Turno do bot
@@ -203,16 +204,21 @@ exports.actionTestArena = async (req, res) => {
       battleLog.push(`Vitória do bot!`);
       status = 'FINISHED';
       await prisma.testArena.delete({ where: { id: arena.id } });
+      if (req.app && req.app.io) {
+        req.app.io.to('testarena').emit('testarena:ended', { status, battleLog, playerHp, botHp });
+      }
       return res.json({ status, battleLog, playerHp, botHp });
     }
     await prisma.testArena.update({ where: { id: arena.id }, data: { playerHp, botHp, currentTurn: 'player', status, battleLog, defendingBot, defendingPlayer } });
+    if (req.app && req.app.io) {
+      req.app.io.to('testarena').emit('testarena:action', { status, battleLog, playerHp, botHp });
+    }
     res.json({ status, battleLog, playerHp, botHp });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Retorna o estado atual da TestArena
 exports.stateTestArena = async (req, res) => {
   try {
     const arena = await prisma.testArena.findFirst({ orderBy: { createdAt: 'desc' } });

@@ -1,4 +1,3 @@
-// /Users/Wander/case-DNC/src/frontend/src/services/socket.js
 
 import { io } from 'socket.io-client';
 
@@ -57,7 +56,5 @@ class SocketService {
 
 const socketService = new SocketService();
 
-// Exportar tanto como default quanto como named export, 
-// para que seja mais fácil importar no front‐end.
 export default socketService;
 export { socketService };

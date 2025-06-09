@@ -15,6 +15,9 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
   const [maxPlayers, setMaxPlayers] = useState(2);
   const [creating, setCreating] = useState(false);
 
+  // Recupera o playerId do localStorage
+  const playerId = Number(localStorage.getItem('playerId'));
+
   useEffect(() => {
     async function fetchArenas() {
       setLoading(true);
@@ -34,20 +37,22 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
   }, []);
 
   const handleEnterTestArena = async () => {
+    if (!monster?.id) {
+      alert('Selecione um monstro antes de entrar na Arena de Teste!');
+      return;
+    }
     setJoining(true);
     try {
-      // Usa o nome do player e monstro selecionados, ou valores padrão
       const playerName = player?.name || 'Player';
       const playerMonster = monster?.name || 'Pikachu';
       const playerMonsterId = monster?.id;
+      console.log('Iniciando TestArena com:', { playerName, playerMonster, playerMonsterId });
       await testArenaService.start(playerName, playerMonster, playerMonsterId);
-      // Atualiza o estado da TestArena
       const data = await testArenaService.getState();
       setTestArena(data);
-      // Chama o callback para navegação, se necessário
       if (onEnterArena) onEnterArena({ isTestArena: true });
     } catch (err) {
-      // Tratar erro se necessário
+
     } finally {
       setJoining(false);
     }
@@ -57,13 +62,38 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
     if (!player || !monster) return;
     setJoining(true);
     try {
+      // Verifica se a arena ainda está disponível
+      const currentArena = await arenaService.getArena(arena.id);
+      if (currentArena.players.length >= currentArena.maxPlayers) {
+        alert('Esta arena já está cheia!');
+        return;
+      }
+
+      // Tenta entrar na arena
       await arenaService.join(arena.id, {
         player_id: player.id,
         monster_id: monster.id
       });
-      onEnterArena(arena);
-    } catch (err) {
-      // Tratar erro se necessário
+
+      // Buscar estado atualizado da arena
+      const updatedArena = await arenaService.getArena(arena.id);
+      console.log('Estado atualizado da arena:', updatedArena);
+
+      // Sempre tenta iniciar a batalha após o join
+      console.log('Tentando iniciar batalha na arena:', arena.id);
+      await arenaService.startBattle(arena.id);
+      const battleArena = await arenaService.getArena(arena.id);
+      if (battleArena.status === 'IN_PROGRESS') {
+        onEnterArena(battleArena);
+      } else {
+        // Atualiza a lista de arenas
+        const updatedArenas = await arenaService.getArenas();
+        setArenas(updatedArenas);
+        alert('Entrou na arena! Aguardando outro jogador ou bot...');
+      }
+    } catch (error) {
+      console.error('Erro ao entrar na arena:', error);
+      alert(error.message || 'Erro ao entrar na arena');
     } finally {
       setJoining(false);
     }
@@ -94,13 +124,21 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
       setArenas(data);
       setLoading(false);
     } catch (err) {
-      // Tratar erro se necessário
+
     } finally {
       setCreating(false);
     }
   };
 
-  const normalArenas = arenas.filter(a => a.name !== 'Arena de Teste');
+  // Novo filtro: mostra arenas com 0 ou 1 jogador (exceto Arena de Teste e Arena 1)
+  const arena1 = arenas.find(a => a.name === 'Arena 1');
+  const outrasArenas = arenas.filter(a => a.name !== 'Arena 1' && a.name !== 'Arena de Teste');
+  const arenasDisponiveis = outrasArenas.filter(a => a.players && a.players.length < a.maxPlayers);
+
+  const filteredArenas = [
+    ...(arena1 && arena1.players.length === arena1.maxPlayers ? [arena1] : []),
+    ...arenasDisponiveis.slice(0, 5)
+  ];
 
   return (
     <Fade in timeout={800}>
@@ -220,7 +258,7 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
               </Button>
             </Box>
             <Grid container spacing={4}>
-              {normalArenas.map((arena) => (
+              {filteredArenas.map((arena) => (
                 <Grid item xs={12} md={6} key={arena.id}>
                   <Paper elevation={3} sx={{
                     p: 3,
@@ -260,9 +298,14 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
                         '&:hover': { background: '#FF0000', color: '#fff' }
                       }}
                       onClick={() => handleEnterArena(arena)}
-                      disabled={arena.players && arena.players.length >= arena.maxPlayers || joining}
+                      disabled={
+                        (arena.players && arena.players.length >= arena.maxPlayers) ||
+                        (arena.players && arena.players.some(ap => ap.player?.id === playerId)) ||
+                        joining
+                      }
                     >
-                      {arena.players && arena.players.length >= arena.maxPlayers ? 'Full' : (joining ? 'Entering...' : 'Enter')}
+                      {arena.players && arena.players.length >= arena.maxPlayers ? 'Full' :
+                        (arena.players && arena.players.some(ap => ap.player?.id === playerId) ? 'Already Joined' : (joining ? 'Entering...' : 'Enter'))}
                     </Button>
                   </Paper>
                 </Grid>

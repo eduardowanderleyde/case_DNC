@@ -17,6 +17,9 @@ export default function PlayerListPage({ onNext }) {
       const newPlayer = await playerService.create({ name });
       setPlayer(newPlayer);
       setPlayerName('');
+      if (newPlayer && newPlayer.id) {
+        localStorage.setItem('playerId', newPlayer.id);
+      }
       if (onNext) onNext([newPlayer]);
     } catch (err) {
       // Tratar erro se necessário

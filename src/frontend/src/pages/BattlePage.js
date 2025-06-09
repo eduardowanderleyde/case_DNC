@@ -1,5 +1,3 @@
-// /src/pages/BattlePage.js
-
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -11,6 +9,7 @@ import {
   Fade
 } from '@mui/material';
 import { arenaService, testArenaService } from '../services/api';
+import socketService from '../services/socket';
 import BattleHeader from '../components/BattleHeader';
 import BattleCards from '../components/BattleCards';
 import BattleLog from '../components/BattleLog';
@@ -29,10 +28,6 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
 
   // Detecta se é modo TestArena
   const isTestArena = selectedArena && selectedArena.isTestArena;
-
-  // Para TestArena: nomes e monstros fixos
-  const testPlayerImg = 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/025.png';
-  const testBotImg = 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/019.png';
 
   // Identificar o player logado (usuário atual)
   const loggedPlayer = players[0];
@@ -61,7 +56,7 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
           setWinner(state.status === 'FINISHED' ? (state.playerHp <= 0 ? state.botName : state.playerName) : null);
         } else if (selectedArena && selectedArena.id) {
           // Buscar estado da arena já existente
-          const arenaState = await arenaService.get(selectedArena.id);
+          const arenaState = await arenaService.getArena(selectedArena.id);
           setArena({
             id: selectedArena.id,
             status: arenaState.status,
@@ -86,7 +81,7 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
             monster_id: monsters[1].id
           });
           await arenaService.start(newArena.id);
-          const arenaState = await arenaService.get(newArena.id);
+          const arenaState = await arenaService.getArena(newArena.id);
           setArena({
             id: newArena.id,
             status: arenaState.status,
@@ -111,6 +106,59 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
     // eslint-disable-next-line
   }, [selectedArena, players, monsters]);
 
+  // --- SOCKET.IO: Atualização em tempo real ---
+  useEffect(() => {
+    if (!arena) return;
+    const socket = socketService.connect();
+    if (isTestArena) {
+      socket.emit('join-testarena');
+    } else if (arena.id) {
+      socket.emit('join-arena', arena.id);
+    }
+    if (isTestArena) {
+      // TestArena: ouvir eventos próprios
+      const handleTestArenaAction = (data) => {
+        setArena(prev => ({ ...prev, ...data, battleLog: data.battleLog }));
+        setWinner(data.status === 'FINISHED' ? (data.playerHp <= 0 ? arena.botName : arena.playerName) : null);
+      };
+      const handleTestArenaEnded = (data) => {
+        setArena(prev => ({ ...prev, ...data, status: 'FINISHED', battleLog: data.battleLog }));
+        setWinner(data.playerHp <= 0 ? arena.botName : arena.playerName);
+      };
+      socketService.on('testarena:action', handleTestArenaAction);
+      socketService.on('testarena:ended', handleTestArenaEnded);
+      return () => {
+        socketService.off('testarena:action');
+        socketService.off('testarena:ended');
+      };
+    } else {
+      // Arenas normais
+      const handleBattleAction = (data) => {
+        if (data.id !== arena.id) return;
+        setArena(prev => ({
+          ...prev,
+          status: data.status,
+          currentTurn: data.currentTurn,
+          players: data.players,
+          battleLog: data.battleLog || [],
+          winner: data.status === 'FINISHED' ? { name: (data.battleLog || []).slice(-1)[0]?.replace('Battle finished! Winner: ', '') } : null
+        }));
+        setWinner(data.status === 'FINISHED' ? { name: (data.battleLog || []).slice(-1)[0]?.replace('Battle finished! Winner: ', '') } : null);
+      };
+      const handleBattleEnded = (data) => {
+        if (data.id !== arena.id) return;
+        setArena(prev => ({ ...prev, status: 'FINISHED', battleLog: data.battleLog || [] }));
+        setWinner({ name: data.winner });
+      };
+      socketService.on('battle:action', handleBattleAction);
+      socketService.on('battle:ended', handleBattleEnded);
+      return () => {
+        socketService.off('battle:action');
+        socketService.off('battle:ended');
+      };
+    }
+  }, [arena, isTestArena]);
+
   const handleAction = async (action) => {
     if (!arena || winner || arena.status !== 'IN_PROGRESS' || isProcessing) return;
     setIsProcessing(true);
@@ -125,7 +173,7 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
         'You chose to Defend'
       );
       setTimeout(async () => {
-        const newState = await arenaService.get(arena.id);
+        const newState = await arenaService.getArena(arena.id);
         setArena({
           id: newState.id,
           status: newState.status,
@@ -234,6 +282,7 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
 
   // Renderização para TestArena
   if (isTestArena && arena) {
+    console.log('[BattlePage] Renderizando TestArena', { arena, winner, status: arena.status, currentTurn: arena.currentTurn });
     return (
       <Fade in timeout={800}>
         <Paper elevation={6} sx={{
@@ -309,6 +358,7 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
     );
   }
 
+  console.log('[BattlePage] Renderizando Arena Normal', { arena, winner, status: arena?.status, currentTurn: arena?.currentTurn, orderedPlayers });
   return (
     <Fade in timeout={800}>
       <Paper elevation={6} sx={{
@@ -339,19 +389,30 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
           status={arena?.status}
           lastAction={arena?.battleLog?.slice(-1)[0] || ''}
         />
-        {!winner && arena?.status === 'IN_PROGRESS' && (
+        {arena?.players && arena.players.length < 2 && (
+          <Box mt={3} textAlign="center">
+            <Typography variant="h6" sx={{ color: '#888', fontFamily: 'inherit', fontWeight: 700 }}>
+              Waiting for opponent...
+            </Typography>
+          </Box>
+        )}
+        {!winner && (
           <BattleActions
-            currentTurn={arena.currentTurn}
+            currentTurn={arena?.currentTurn}
             players={orderedPlayers}
             onAttackClick={handleAttackClick}
             onDefend={() => handleAction('defend')}
-            onSpecial={() => handleAttackType('special')}
+            onSpecial={() => handleAction('special')}
             onForfeit={handleEndBattle}
             attackModalOpen={attackModalOpen}
             onAttackType={handleAttackType}
             onCloseAttackModal={() => setAttackModalOpen(false)}
             feedbackMsg={feedbackMsg}
-            disabled={isProcessing || arena.currentTurn !== loggedPlayer.id}
+            disabled={
+              isProcessing ||
+              arena?.status !== 'IN_PROGRESS' ||
+              arena?.currentTurn !== loggedPlayer.id
+            }
           />
         )}
         {winner && (

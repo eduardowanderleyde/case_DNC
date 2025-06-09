@@ -1,7 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Get all monsters
 exports.getAllMonsters = async (req, res) => {
   try {
     const monsters = await prisma.monster.findMany();
@@ -11,7 +10,6 @@ exports.getAllMonsters = async (req, res) => {
   }
 };
 
-// Get monster by ID
 exports.getMonsterById = async (req, res) => {
   try {
     const monster = await prisma.monster.findUnique({
@@ -26,7 +24,6 @@ exports.getMonsterById = async (req, res) => {
   }
 };
 
-// Create new monster
 exports.createMonster = async (req, res) => {
   try {
     const newMonster = await prisma.monster.create({ data: req.body });
@@ -36,7 +33,6 @@ exports.createMonster = async (req, res) => {
   }
 };
 
-// Update monster
 exports.updateMonster = async (req, res) => {
   try {
     const monster = await prisma.monster.update({
@@ -49,7 +45,6 @@ exports.updateMonster = async (req, res) => {
   }
 };
 
-// Delete monster
 exports.deleteMonster = async (req, res) => {
   try {
     await prisma.monster.delete({

@@ -1,4 +1,3 @@
-// /Users/Wander/case-DNC/src/server.js
 
 const express = require('express');
 const cors = require('cors');
@@ -11,11 +10,9 @@ const testArenaRoutes = require('./api/routes/testArenaRoutes');
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Exponha io em req.app para os controllers:
 let ioInstance = null;
 app.use((req, res, next) => {
   if (ioInstance) {
@@ -24,7 +21,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rotas
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Monster Battle API' });
 });
@@ -34,7 +30,6 @@ app.use('/api/players', playerRoutes);
 app.use('/api/arenas', arenaRoutes);
 app.use('/api/test-arena', testArenaRoutes);
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Something went wrong!' });
@@ -55,6 +50,16 @@ if (require.main === module) {
 
   io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
+    // Entrar em sala de arena normal
+    socket.on('join-arena', (arenaId) => {
+      socket.join(`arena-${arenaId}`);
+      console.log(`Socket ${socket.id} joined arena-${arenaId}`);
+    });
+    // Entrar em sala de testarena (só um por vez normalmente)
+    socket.on('join-testarena', () => {
+      socket.join('testarena');
+      console.log(`Socket ${socket.id} joined testarena`);
+    });
     socket.on('disconnect', () => {
       console.log('User disconnected:', socket.id);
     });

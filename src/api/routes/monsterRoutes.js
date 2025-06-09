@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const monsterController = require('../controllers/monsterController');
 
-// Monster routes
 router.get('/', monsterController.getAllMonsters);
 router.get('/:id', monsterController.getMonsterById);
 router.post('/', monsterController.createMonster);
