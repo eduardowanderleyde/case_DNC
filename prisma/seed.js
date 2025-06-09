@@ -2,26 +2,25 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  // Clean database
   await prisma.arenaPlayer.deleteMany();
   await prisma.monster.deleteMany();
   await prisma.player.deleteMany();
   await prisma.arena.deleteMany();
 
-  // Create players
+  // Criação dos jogadores
   const players = await prisma.player.createMany({
     data: [
-      { name: 'Ash' },    // 0
-      { name: 'Misty' },  // 1
-      { name: 'Brock' },  // 2
-      { name: 'Gary' },   // 3
-      { name: 'Erika' },  // 4
+      { name: 'Ash' },  // 0
+      { name: 'Misty' }, // 1
+      { name: 'Brock' }, // 2
+      { name: 'Gary' },  // 3
+      { name: 'Erika' }, // 4
       { name: 'Sabrina' } // 5
     ]
   });
   const allPlayers = await prisma.player.findMany();
 
-  // Create monsters (11 Pokémon, incluindo Rattata)
+  // Criação dos monstros
   const monstersData = [
     { name: 'Pikachu', type: 'ELECTRIC', imageUrl: 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/025.png', hp: 60, attack: 18, defense: 8, speed: 22, special: 'Thunderbolt', ownerId: allPlayers[0].id },
     { name: 'Charizard', type: 'FIRE', imageUrl: 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/006.png', hp: 78, attack: 24, defense: 14, speed: 20, special: 'Flamethrower', ownerId: allPlayers[0].id },
@@ -42,48 +41,39 @@ async function main() {
     createdMonsters.push(m);
   }
 
-  // Criar 8 arenas
-  const arenas = [];
-  for (let i = 1; i <= 8; i++) {
-    const arena = await prisma.arena.create({
-      data: {
-        name: `Arena ${i}`,
-        maxPlayers: 2
-      }
-    });
-    arenas.push(arena);
-  }
+  // Criação das arenas padrão
+  const arena1 = await prisma.arena.create({ data: { name: 'Arena 1', maxPlayers: 2 } });
+  const arena2 = await prisma.arena.create({ data: { name: 'Arena 2', maxPlayers: 2 } });
+  const arena3 = await prisma.arena.create({ data: { name: 'Arena 3', maxPlayers: 2 } });
+  const arena4 = await prisma.arena.create({ data: { name: 'Arena 4', maxPlayers: 2 } });
+  const arena5 = await prisma.arena.create({ data: { name: 'Arena 5', maxPlayers: 2 } });
 
-  // Arena 1: cheia (Ash e Misty)
+  // Arena 1 cheia
   await prisma.arenaPlayer.createMany({
     data: [
-      { arenaId: arenas[0].id, playerId: allPlayers[0].id, monsterId: createdMonsters[0].id, isReady: false }, // Ash - Pikachu
-      { arenaId: arenas[0].id, playerId: allPlayers[1].id, monsterId: createdMonsters[2].id, isReady: false }  // Misty - Blastoise
+      { arenaId: arena1.id, playerId: allPlayers[0].id, monsterId: createdMonsters[0].id, isReady: false }, // Ash - Pikachu
+      { arenaId: arena1.id, playerId: allPlayers[1].id, monsterId: createdMonsters[2].id, isReady: false }  // Misty - Blastoise
     ]
   });
-  // Arenas 2-8: cada uma com 1 jogador diferente (circular se faltar)
-  for (let i = 1; i <= 7; i++) {
-    const playerIdx = (i + 1) % allPlayers.length;
-    const monsterIdx = (i + 2) % createdMonsters.length;
-    await prisma.arenaPlayer.create({
-      data: {
-        arenaId: arenas[i].id,
-        playerId: allPlayers[playerIdx].id,
-        monsterId: createdMonsters[monsterIdx].id,
-        isReady: false
-      }
-    });
-  }
 
-  // Arena de Teste: sempre vazia
-  const testArena = await prisma.arena.create({
-    data: {
-      name: 'Arena de Teste',
-      maxPlayers: 2
-    }
+  // Arena 2 a 5 com 1 jogador cada
+  await prisma.arenaPlayer.create({
+    data: { arenaId: arena2.id, playerId: allPlayers[2].id, monsterId: createdMonsters[3].id, isReady: false } // Brock - Bulbasaur
+  });
+  await prisma.arenaPlayer.create({
+    data: { arenaId: arena3.id, playerId: allPlayers[3].id, monsterId: createdMonsters[4].id, isReady: false } // Gary - Gengar
+  });
+  await prisma.arenaPlayer.create({
+    data: { arenaId: arena4.id, playerId: allPlayers[4].id, monsterId: createdMonsters[5].id, isReady: false } // Erika - Snorlax
+  });
+  await prisma.arenaPlayer.create({
+    data: { arenaId: arena5.id, playerId: allPlayers[5].id, monsterId: createdMonsters[7].id, isReady: false } // Sabrina - Lapras
   });
 
-  console.log('Seeds criadas: Arena 1 com Ash e Misty, Arena 2 com Brock, Arena 3 com Gary, Arena 4 com Erika, Arena 5 com Sabrina, e Arena de Teste vazia!');
+  // Arena de Teste vazia
+  await prisma.arena.create({ data: { name: 'Arena de Teste', maxPlayers: 2 } });
+
+  console.log('Seeds criadas: Arena 1 cheia, Arena 2-5 com 1 jogador, Arena de Teste vazia!');
 }
 
 main()

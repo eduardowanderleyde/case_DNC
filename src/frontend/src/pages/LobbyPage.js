@@ -62,20 +62,38 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
     if (!player || !monster) return;
     setJoining(true);
     try {
+      // Verifica se a arena ainda está disponível
+      const currentArena = await arenaService.getArena(arena.id);
+      if (currentArena.players.length >= currentArena.maxPlayers) {
+        alert('Esta arena já está cheia!');
+        return;
+      }
+
+      // Tenta entrar na arena
       await arenaService.join(arena.id, {
         player_id: player.id,
         monster_id: monster.id
       });
+
       // Buscar estado atualizado da arena
-      const res = await fetch(`/api/arenas/${arena.id}`);
-      const updatedArena = await res.json();
-      // Se a arena ficou cheia e está em WAITING, iniciar a batalha
-      if (updatedArena.players && updatedArena.players.length === updatedArena.maxPlayers && updatedArena.status === 'WAITING') {
-        await arenaService.startBattle(arena.id);
+      const updatedArena = await arenaService.getArena(arena.id);
+      console.log('Estado atualizado da arena:', updatedArena);
+
+      // Sempre tenta iniciar a batalha após o join
+      console.log('Tentando iniciar batalha na arena:', arena.id);
+      await arenaService.startBattle(arena.id);
+      const battleArena = await arenaService.getArena(arena.id);
+      if (battleArena.status === 'IN_PROGRESS') {
+        onEnterArena(battleArena);
+      } else {
+        // Atualiza a lista de arenas
+        const updatedArenas = await arenaService.getArenas();
+        setArenas(updatedArenas);
+        alert('Entrou na arena! Aguardando outro jogador ou bot...');
       }
-      if (onEnterArena) onEnterArena(arena);
-    } catch (err) {
-      // Tratar erro se necessário
+    } catch (error) {
+      console.error('Erro ao entrar na arena:', error);
+      alert(error.message || 'Erro ao entrar na arena');
     } finally {
       setJoining(false);
     }
@@ -112,13 +130,15 @@ export default function LobbyPage({ onEnterArena, player, monster }) {
     }
   };
 
-  const normalArenas = arenas.filter(a => a.name !== 'Arena de Teste');
+  // Novo filtro: mostra arenas com 0 ou 1 jogador (exceto Arena de Teste e Arena 1)
+  const arena1 = arenas.find(a => a.name === 'Arena 1');
+  const outrasArenas = arenas.filter(a => a.name !== 'Arena 1' && a.name !== 'Arena de Teste');
+  const arenasDisponiveis = outrasArenas.filter(a => a.players && a.players.length < a.maxPlayers);
 
-  // Filtrar arenas: mostrar só a Arena 1 (cheia) e as demais com exatamente 1 jogador
-  const filteredArenas = arenas.filter((a, idx) => {
-    if (idx === 0) return a.players && a.players.length === a.maxPlayers; // Arena 1 cheia
-    return a.players && a.players.length === 1; // Demais com 1 jogador
-  });
+  const filteredArenas = [
+    ...(arena1 && arena1.players.length === arena1.maxPlayers ? [arena1] : []),
+    ...arenasDisponiveis.slice(0, 5)
+  ];
 
   return (
     <Fade in timeout={800}>

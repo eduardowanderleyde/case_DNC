@@ -1,4 +1,3 @@
-
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const arenaService = require('../services/arenaService');
@@ -137,7 +136,8 @@ exports.leaveArena = async (req, res) => {
 exports.startBattle = async (req, res) => {
   try {
     const { id } = req.params;
-    const arena = await prisma.arena.findUnique({
+    console.log('[startBattle] Iniciando batalha para arena:', id);
+    let arena = await prisma.arena.findUnique({
       where: { id: parseInt(id) },
       include: {
         players: {
@@ -149,23 +149,78 @@ exports.startBattle = async (req, res) => {
     });
 
     if (!arena) {
+      console.log('[startBattle] Arena não encontrada:', id);
       return res.status(404).json({ message: 'Arena not found' });
     }
     if (arena.status !== 'WAITING') {
+      console.log('[startBattle] Status inválido:', arena.status);
       return res.status(400).json({ message: 'Arena is not in waiting state' });
     }
+
+    // Se só houver um jogador, adicionar um bot automaticamente
+    if (!arena.player2) {
+      console.log('[startBattle] Só há um jogador, adicionando bot...');
+      // Busca ou cria o player Bot
+      let botPlayer = await prisma.player.findFirst({ where: { name: 'Bot' } });
+      if (!botPlayer) {
+        botPlayer = await prisma.player.create({ data: { name: 'Bot' } });
+      }
+      // Busca ou cria o monstro Rattata
+      let botMonster = await prisma.monster.findFirst({ where: { name: 'Rattata' } });
+      if (!botMonster) {
+        botMonster = await prisma.monster.create({
+          data: {
+            name: 'Rattata',
+            type: 'NORMAL',
+            imageUrl: 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/019.png',
+            hp: 30,
+            attack: 10,
+            defense: 5,
+            speed: 15,
+            special: 'Quick Attack',
+            ownerId: botPlayer.id
+          }
+        });
+      }
+      // Adiciona o bot na arena
+      await prisma.arenaPlayer.create({
+        data: {
+          arenaId: arena.id,
+          playerId: botPlayer.id,
+          monsterId: botMonster.id,
+          isReady: false
+        }
+      });
+      // Atualiza player2Id
+      await prisma.arena.update({
+        where: { id: arena.id },
+        data: { player2Id: botPlayer.id }
+      });
+      // Recarrega arena com bot incluso
+      arena = await prisma.arena.findUnique({
+        where: { id: parseInt(id) },
+        include: {
+          players: { include: { player: true, monster: true } },
+          player1: true,
+          player2: true
+        }
+      });
+    }
+
     if (!arena.player1 || !arena.player2) {
+      console.log('[startBattle] Arena precisa de dois jogadores:', { player1: arena.player1, player2: arena.player2 });
       return res.status(400).json({ message: 'Arena needs two players to start' });
     }
     if (!arena.player1Id || !arena.player2Id || arena.player1Id === arena.player2Id) {
+      console.log('[startBattle] IDs inválidos:', { player1Id: arena.player1Id, player2Id: arena.player2Id });
       return res.status(400).json({ message: 'Arena needs two different players to start' });
     }
 
-    // Reset monsters' HP to their maxHp (from model)
+    // Reset monsters' HP para o valor atual (ou maxHp se existir)
     for (const p of arena.players) {
       await prisma.monster.update({
         where: { id: p.monsterId },
-        data: { hp: p.monster.hp } // Se quiser um campo maxHp, troque para maxHp
+        data: { hp: p.monster.hp }
       });
     }
 
@@ -173,6 +228,7 @@ exports.startBattle = async (req, res) => {
     const player1 = arena.players.find(p => p.playerId === arena.player1Id);
     const player2 = arena.players.find(p => p.playerId === arena.player2Id);
     if (!player1 || !player2) {
+      console.log('[startBattle] Jogadores não encontrados na arena:', { player1, player2 });
       return res.status(400).json({ message: 'Jogadores não encontrados na arena.' });
     }
     // Buscar atributos de speed dos monstros
@@ -201,6 +257,7 @@ exports.startBattle = async (req, res) => {
         player2: true
       }
     });
+    console.log('[startBattle] Batalha iniciada com sucesso:', updatedArena.id);
 
     res.json({
       message: 'Battle started',
@@ -217,6 +274,7 @@ exports.startBattle = async (req, res) => {
       }
     });
   } catch (error) {
+    console.log('[startBattle] Erro inesperado:', error);
     res.status(500).json({ message: 'Error starting battle' });
   }
 };

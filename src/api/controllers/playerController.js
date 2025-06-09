@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { createArenaWithPlayer } = require('../services/arenaService');
 
 exports.getAllPlayers = async (req, res) => {
   try {
@@ -27,14 +28,28 @@ exports.getPlayerById = async (req, res) => {
 exports.createPlayer = async (req, res) => {
   try {
     const { name } = req.body;
-    // Se já existe, atualiza o jogador existente
-    let player = await prisma.player.findUnique({ where: { name } });
-    if (player) {
-      player = await prisma.player.update({ where: { id: player.id }, data: { name } });
-      return res.status(200).json(player);
-    }
-    // Se não existe, cria novo
+    // Sempre cria um novo player, mesmo que o nome já exista
     const newPlayer = await prisma.player.create({ data: { name } });
+
+    // Crie um monstro padrão para o novo player, se ele não tiver nenhum
+    const existingMonsters = await prisma.monster.findMany({ where: { ownerId: newPlayer.id } });
+    if (existingMonsters.length === 0) {
+      await prisma.monster.create({
+        data: {
+          name: 'Pikachu',
+          type: 'ELECTRIC',
+          imageUrl: 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/025.png',
+          hp: 60,
+          attack: 18,
+          defense: 8,
+          speed: 22,
+          special: 'Thunderbolt',
+          ownerId: newPlayer.id
+        }
+      });
+    }
+
+    // Não cria mais arenas artificiais!
     res.status(201).json(newPlayer);
   } catch (error) {
     res.status(400).json({ message: error.message });

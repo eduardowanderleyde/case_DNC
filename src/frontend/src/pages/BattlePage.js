@@ -56,7 +56,7 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
           setWinner(state.status === 'FINISHED' ? (state.playerHp <= 0 ? state.botName : state.playerName) : null);
         } else if (selectedArena && selectedArena.id) {
           // Buscar estado da arena já existente
-          const arenaState = await arenaService.get(selectedArena.id);
+          const arenaState = await arenaService.getArena(selectedArena.id);
           setArena({
             id: selectedArena.id,
             status: arenaState.status,
@@ -81,7 +81,7 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
             monster_id: monsters[1].id
           });
           await arenaService.start(newArena.id);
-          const arenaState = await arenaService.get(newArena.id);
+          const arenaState = await arenaService.getArena(newArena.id);
           setArena({
             id: newArena.id,
             status: arenaState.status,
@@ -173,7 +173,7 @@ export default function BattlePage({ players, monsters, arena: selectedArena }) 
         'You chose to Defend'
       );
       setTimeout(async () => {
-        const newState = await arenaService.get(arena.id);
+        const newState = await arenaService.getArena(arena.id);
         setArena({
           id: newState.id,
           status: newState.status,
